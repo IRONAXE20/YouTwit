@@ -9,7 +9,7 @@ function SubscriptionPage() {
   useEffect(() => {
     const fetchSubscriptions = async () => {
       try {
-        const response = await axiosInstance.get("/subscriptions/subscribed-channels");
+        const response = await axiosInstance.get("/subscriptions/c/:userId");
         setChannels(response.data.data || []);
       } catch (error) {
         console.error("Error fetching subscriptions:", error);

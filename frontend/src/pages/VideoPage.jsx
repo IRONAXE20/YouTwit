@@ -18,33 +18,37 @@ function VideoPage() {
   const user = JSON.parse(localStorage.getItem("currentUser"));
 
   useEffect(() => {
-    const fetchVideoData = async () => {
-      try {
-        const videoRes = await axiosInstance.get(`/videos/${videoId}`);
-        setVideo(videoRes.data.data);
+  const fetchVideoData = async () => {
+    try {
+      const videoRes = await axiosInstance.get(`/videos/${videoId}`);
+      const videoData = videoRes.data.data;
+      setVideo(videoData);
 
-        const commentRes = await axiosInstance.get(`/comments/${videoId}`);
-        setComments(commentRes.data.data.docs || []);
+      const commentRes = await axiosInstance.get(`/comments/${videoId}`);
+      setComments(commentRes.data.data.docs || []);
 
-        const likeRes = await axiosInstance.get(`/likes/hasLiked/${videoId}`);
-        setHasLiked(likeRes.data.data);
+      const likedVideosRes = await axiosInstance.get("/likes/videos");
+      const likedVideos = likedVideosRes.data.data || [];
+      setHasLiked(likedVideos.some((v) => v._id === videoId));
 
-        const subRes = await axiosInstance.get(
-          `/subscriptions/isSubscribed/${videoRes.data.data.owner._id}`
-        );
-        setIsSubscribed(subRes.data.data);
+     
+      const subsRes = await axiosInstance.get(`/subscriptions/c/${user._id}`);
+      const subscribedChannels = subsRes.data.data || [];
+      setIsSubscribed(
+        subscribedChannels.some((c) => c.channel._id === videoData.owner._id)
+      );
+      const countRes = await axiosInstance.get(
+        `/subscriptions/count/${videoData.owner._id}`
+      );
+      setSubscriberCount(countRes.data.data);
+    } catch (error) {
+      console.error("Error loading video data:", error);
+    }
+  };
 
-        const countRes = await axiosInstance.get(
-          `/subscriptions/count/${videoRes.data.data.owner._id}`
-        );
-        setSubscriberCount(countRes.data.data);
-      } catch (error) {
-        console.error("Error loading video data:", error);
-      }
-    };
+  fetchVideoData();
+}, [videoId]);
 
-    fetchVideoData();
-  }, [videoId]);
 
   const handleWatchHistory = async () => {
     if (!hasTracked && video && user) {
