@@ -60,15 +60,12 @@ function VideoPage() {
   }, [videoId]); // single effect — no duplicates
 
   const handleWatchHistory = async () => {
-    if (!hasTracked && video && user?._id) {
-      try {
-        // NOTE: your backend currently has only GET /users/history (no POST).
-        // Keep this call if you add the POST route; otherwise comment out.
-        await axiosInstance.post("/users/watch-history", { videoId: video._id });
-        setHasTracked(true);
-      } catch (error) {
-        console.error("Failed to record watch history:", error);
-      }
+  if (hasTracked || !user?._id) return;        // avoid duplicate posts / anon users
+  try {
+    await axiosInstance.post("/users/watch-history", { videoId });
+    setHasTracked(true);
+  } catch (error) {
+    console.error("Failed to record watch history:", error);
     }
   };
 
