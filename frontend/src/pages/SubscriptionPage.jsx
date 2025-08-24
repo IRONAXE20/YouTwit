@@ -1,53 +1,50 @@
+// /src/pages/SubscriptionPage.jsx
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../utils/AxiosInstance";
-import { Link } from "react-router-dom";
 
 function SubscriptionPage() {
   const [channels, setChannels] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const user = JSON.parse(localStorage.getItem("currentUser") || "null");
 
   useEffect(() => {
-    const fetchSubscriptions = async () => {
+    const fetchSubs = async () => {
       try {
-        const response = await axiosInstance.get("/subscriptions/c/:userId");
-        setChannels(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching subscriptions:", error);
-      } finally {
-        setLoading(false);
+        if (!user?._id) return;
+        const res = await axiosInstance.get(`/subscriptions/c/${user._id}`);
+        // backend returns array of Subscription docs populated with 'channel'
+        const list = (res.data.data || []).map((s) => s.channel).filter(Boolean);
+        setChannels(list);
+      } catch (e) {
+        console.error("Failed to load subscriptions", e);
       }
     };
+    fetchSubs();
+  }, [user?._id]);
 
-    fetchSubscriptions();
-  }, []);
+  if (!user) return <div className="p-6">Please login</div>;
 
   return (
-    <div className="min-h-screen bg-blue-50 p-6">
-      <div className="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-md">
-        <h2 className="text-2xl font-bold text-blue-600 mb-4">Subscribed Channels</h2>
-
-        {loading ? (
-          <p className="text-gray-500">Loading...</p>
-        ) : channels.length === 0 ? (
-          <p className="text-gray-500">You have not subscribed to any channels yet.</p>
-        ) : (
-          <ul className="space-y-4">
-            {channels.map((channel) => (
-              <li key={channel._id} className="flex items-center space-x-4 p-4 bg-blue-100 rounded-xl shadow">
-                <img
-                  src={channel.avatar}
-                  alt="Channel Avatar"
-                  className="w-14 h-14 rounded-full object-cover border border-blue-300"
-                />
-                <div>
-                  <p className="text-lg font-semibold text-blue-800">{channel.fullName}</p>
-                  <p className="text-sm text-gray-600">@{channel.username}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <div className="p-6 max-w-3xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Your Subscriptions</h2>
+      {channels.length === 0 ? (
+        <p className="text-gray-600">You haven’t subscribed to any channels yet.</p>
+      ) : (
+        <ul className="space-y-3">
+          {channels.map((ch) => (
+            <li key={ch._id} className="p-3 bg-white rounded shadow flex items-center space-x-3">
+              <img
+                src={ch.avatar || "/default-avatar.png"}
+                alt={ch.username}
+                className="w-10 h-10 rounded-full"
+              />
+              <div>
+                <div className="font-semibold">{ch.fullName}</div>
+                <div className="text-sm text-gray-500">@{ch.username}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

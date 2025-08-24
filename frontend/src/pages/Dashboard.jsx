@@ -40,7 +40,7 @@ function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("currentUser");
-    navigate("/");
+    navigate("/"); // adjust if your login route is "/"
   };
 
   return (
@@ -77,6 +77,12 @@ function Dashboard() {
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-6">
           <button
+            onClick={() => navigate("/feed")}      
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+          >
+            🏠 Go to Feed
+          </button>
+          <button
             onClick={() => navigate("/upload-video")}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
           >
@@ -111,7 +117,7 @@ function Dashboard() {
                   {videos.map((video) => (
                     <li key={video._id}>
                       <button
-                        onClick={() => navigate(`/video/${video._id}`)}
+                        onClick={() => navigate(`/video/${video._id}`)}  // <-- FIXED: plural
                         className="text-blue-600 hover:underline"
                       >
                         {video.title}

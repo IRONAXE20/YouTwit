@@ -1,3 +1,4 @@
+// /src/pages/VideoPage.jsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axiosInstance from "../utils/AxiosInstance";
@@ -15,44 +16,54 @@ function VideoPage() {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingContent, setEditingContent] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("currentUser"));
+  const user = JSON.parse(localStorage.getItem("currentUser") || "null");
 
   useEffect(() => {
-  const fetchVideoData = async () => {
-    try {
-      const videoRes = await axiosInstance.get(`/videos/${videoId}`);
-      const videoData = videoRes.data.data;
-      setVideo(videoData);
+    const fetchVideoData = async () => {
+      try {
+        // 1) video
+        const videoRes = await axiosInstance.get(`/videos/${videoId}`);
+        const videoData = videoRes.data.data;
+        setVideo(videoData);
 
-      const commentRes = await axiosInstance.get(`/comments/${videoId}`);
-      setComments(commentRes.data.data.docs || []);
+        // 2) comments
+        const commentRes = await axiosInstance.get(`/comments/${videoId}`);
+        setComments(commentRes.data.data.docs || []);
 
-      const likedVideosRes = await axiosInstance.get("/likes/videos");
-      const likedVideos = likedVideosRes.data.data || [];
-      setHasLiked(likedVideos.some((v) => v._id === videoId));
+        // 3) liked? -> GET /likes/videos then check membership
+        const likedVideosRes = await axiosInstance.get("/likes/videos");
+        const likedVideos = likedVideosRes.data.data || [];
+        setHasLiked(likedVideos.some((v) => v._id === videoId));
 
-     
-      const subsRes = await axiosInstance.get(`/subscriptions/c/${user._id}`);
-      const subscribedChannels = subsRes.data.data || [];
-      setIsSubscribed(
-        subscribedChannels.some((c) => c.channel._id === videoData.owner._id)
-      );
-      const countRes = await axiosInstance.get(
-        `/subscriptions/count/${videoData.owner._id}`
-      );
-      setSubscriberCount(countRes.data.data);
-    } catch (error) {
-      console.error("Error loading video data:", error);
-    }
-  };
+        // 4) subscribed? -> GET /subscriptions/c/:subscriberId (current user)
+        if (user?._id) {
+          const subsRes = await axiosInstance.get(`/subscriptions/c/${user._id}`);
+          const subscribedChannels = subsRes.data.data || []; // {channel: {...}}
+          setIsSubscribed(
+            subscribedChannels.some((s) => s.channel?._id === videoData.owner._id)
+          );
+        } else {
+          setIsSubscribed(false);
+        }
 
-  fetchVideoData();
-}, [videoId]);
+        // 5) subscriber count
+        const countRes = await axiosInstance.get(
+          `/subscriptions/count/${videoData.owner._id}`
+        );
+        setSubscriberCount(countRes.data.data);
+      } catch (error) {
+        console.error("Error loading video data:", error);
+      }
+    };
 
+    fetchVideoData();
+  }, [videoId]); // single effect — no duplicates
 
   const handleWatchHistory = async () => {
-    if (!hasTracked && video && user) {
+    if (!hasTracked && video && user?._id) {
       try {
+        // NOTE: your backend currently has only GET /users/history (no POST).
+        // Keep this call if you add the POST route; otherwise comment out.
         await axiosInstance.post("/users/watch-history", { videoId: video._id });
         setHasTracked(true);
       } catch (error) {
@@ -87,16 +98,17 @@ function VideoPage() {
       const res = await axiosInstance.post(`/comments/${video._id}`, {
         content: newComment,
       });
-
       const newCmt = res.data.data;
 
-      // Simulate populated ownerDetails using currentUser
-      newCmt.ownerDetails = {
-        _id: user._id,
-        fullName: user.fullName,
-        username: user.username,
-        avatar: user.avatar,
-      };
+      // populate with currentUser for immediate UI
+      if (user) {
+        newCmt.ownerDetails = {
+          _id: user._id,
+          fullName: user.fullName,
+          username: user.username,
+          avatar: user.avatar,
+        };
+      }
 
       setComments((prev) => [newCmt, ...prev]);
       setNewComment("");
@@ -111,9 +123,7 @@ function VideoPage() {
         content: editingContent,
       });
       setComments((prev) =>
-        prev.map((c) =>
-          c._id === commentId ? { ...c, content: editingContent } : c
-        )
+        prev.map((c) => (c._id === commentId ? { ...c, content: editingContent } : c))
       );
       setEditingCommentId(null);
       setEditingContent("");
@@ -152,9 +162,7 @@ function VideoPage() {
               <p className="text-sm text-gray-500">@{video.owner.username}</p>
             </div>
           </div>
-          <div className="text-sm text-gray-500">
-            {subscriberCount} subscribers
-          </div>
+          <div className="text-sm text-gray-500">{subscriberCount} subscribers</div>
         </div>
 
         {/* Video */}
@@ -214,7 +222,7 @@ function VideoPage() {
           ) : (
             <ul className="space-y-4">
               {comments.map((comment) => {
-                const isOwner = comment.ownerDetails?._id === user._id;
+                const isOwner = comment.ownerDetails?._id === user?._id;
                 return (
                   <li
                     key={comment._id}

@@ -8,6 +8,9 @@ import PrivateRoute from "./components/PrivateRoute";
 import VideoPage from "./pages/VideoPage";
 import WatchHistory from "./pages/WatchHistory";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import FeedPage from "./pages/FeedPage";
+
+
 
 function App() {
   return (
@@ -43,6 +46,7 @@ function App() {
         <Route path="/history" element={<PrivateRoute><WatchHistory /></PrivateRoute>} />
         <Route path="/subscriptions" element={<PrivateRoute><SubscriptionPage /></PrivateRoute>} />
         <Route path="/watch-history" element={<WatchHistory />} />
+        <Route path="/feed" element={<PrivateRoute><FeedPage /></PrivateRoute>} />
       </Routes>
     </Router>
   );
